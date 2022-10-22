@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Tracker</title>
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self' 'unsafe-inline' sha256-0g4EmJoARAyQWmAflyM6b7bL/gjW1QPrscuNb+ulBuU=; img-src 'self' data: blob:;"
+        />
+        <link rel="stylesheet" href="./style.css" />
+    </head>
+    <body>
+        <p>Last screenshot <span id="datetime"></span></p>
+        <img id="my-preview" />
+
+        <div id="openModal" class="modalDialog">
+            <div>
+                <form>
+                    <h2>User Info</h2>
+
+                    <p>Please input your username</p>
+                    <p>
+                        <input
+                            class="input"
+                            maxlength="10"
+                            minlength="3"
+                            id="userName"
+                            name="userName"
+                            value=""
+                            required
+                        />
+                    </p>
+                    <button class="button" id="okBtn">Ok</button>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            document.getElementById("okBtn").onclick = function () {
+                const userName = document.getElementById("userName").value.replace(/' '/g, "");
+                console.log("userName in browser", userName);
+                window.electronAPI.send("set-username", userName);
+            };
+        </script>
+    </body>
+</html>
