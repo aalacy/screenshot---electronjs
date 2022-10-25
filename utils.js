@@ -68,11 +68,18 @@ const registerStartupForLinux = () => {
         `Name=Tracker`,
     ].join("\r\n");
     log.info("[registerStartupForLinux]", launchDesktopIni);
-    fs.writeFileSync(path.resolve(os.homedir(), ".config/autostart/tracker.desktop"), launchDesktopIni);
+    const startupPath = path.resolve(os.homedir(), ".config/autostart/tracker.desktop");
+    fs.writeFileSync(startupPath, launchDesktopIni);
 };
 
 const registerStartupForWindow = () => {
     log.info("[registerStartupForWindow]");
+    const startupPath = path.resolve(
+        os.homedir(),
+        "\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\tracker.exe - Shortcut"
+    );
+    const exePath = `${process.cwd()}/tracker.exe`;
+    fs.symlinkSync(exePath, startupPath);
 };
 
 const registerStartupForMac = () => {
