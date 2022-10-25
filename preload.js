@@ -1,22 +1,48 @@
 const { contextBridge, ipcRenderer } = require("electron");
 const fs = require("fs");
 const Path = require("path");
-const log = require('electron-log');
+const log = require("electron-log");
 
-const { info } = require("./utils");
+const { info, takeScreenshot } = require("./utils");
 
 contextBridge.exposeInMainWorld("electronAPI", {
     send: (channel, data) => ipcRenderer.invoke(channel, data),
     handle: (channel, callable, event, data) => ipcRenderer.on(channel, callable(event, data)),
 });
 
+const drawImage = (base64data) => {
+    document.getElementById("my-preview").setAttribute("src", base64data);
+    const { datetime, fileName } = info();
+    document.getElementById("datetime").innerHTML = datetime;
+    const path = Path.resolve(__dirname, "tmp", fileName);
+    const imgBuffer = Buffer.from(base64data.replace("data:image/png;base64,", ""), "base64");
+    fs.writeFileSync(path, imgBuffer);
+    log.info("[save] image", path);
+    ipcRenderer.invoke("upload", path);
+};
+
 ipcRenderer.on("LOAD_USER_INFO", (event) => {
-    log.info('show userinfo modal')
+    log.info("[show userinfo modal]");
     document.getElementById("openModal").style.display = "block";
-})
+});
+
+ipcRenderer.on("UPDATE_SERVER_INFO", (event, serverURL) => {
+    log.info("[show update server modal], serverURL: ", serverURL);
+    document.getElementById("openModal").style.display = "block";
+    document.getElementById("userName").style.display = "none";
+    document.getElementById("usernameLabel").style.display = "none";
+    if (serverURL) {
+        document.getElementById("serverURL").value = serverURL;
+    }
+});
+
+ipcRenderer.on("TAKE_SCREENSHOT", async (event) => {
+    const base64data = await takeScreenshot();
+    drawImage(base64data);
+});
 
 ipcRenderer.on("SET_SOURCE", async (event, sourceId) => {
-    log.info('[capture] image', sourceId)
+    log.info("[capture] image", sourceId);
     try {
         const stream = await navigator.mediaDevices.getUserMedia({
             audio: false,
@@ -25,9 +51,9 @@ ipcRenderer.on("SET_SOURCE", async (event, sourceId) => {
                     chromeMediaSource: "desktop",
                     chromeMediaSourceId: sourceId,
                     minWidth: 1280,
-                    maxWidth: 4000,
+                    maxWidth: 1280,
                     minHeight: 1024,
-                    maxHeight: 4000,
+                    maxHeight: 1024,
                 },
             },
         });
@@ -36,14 +62,7 @@ ipcRenderer.on("SET_SOURCE", async (event, sourceId) => {
             stream,
             (base64data) => {
                 // Draw image in the img tag
-                document.getElementById("my-preview").setAttribute("src", base64data);
-				const { date, fileName } = info()
-				document.getElementById("datetime").innerHTML = date
-                const path = Path.resolve(__dirname, "tmp", fileName);
-                const imgBuffer = Buffer.from(base64data.replace("data:image/png;base64,", ""), "base64");
-				fs.writeFileSync(path, imgBuffer)
-                log.info('[save] image', path)
-                ipcRenderer.invoke("upload", path);
+                drawImage(base64data);
             },
             "image/png"
         );
@@ -70,6 +89,7 @@ const handleStream = (stream, callback, imageFormat) => {
 
         // Create canvas
         var canvas = document.createElement("canvas");
+        canvas.captureStream(1);
         canvas.width = videoWidth;
         canvas.height = videoHeight;
         var ctx = canvas.getContext("2d");

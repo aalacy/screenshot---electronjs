@@ -1,5 +1,6 @@
 # Taking a screenshot Desktop App in electron JS
 This Desktop Application Develop in Electron for Taking a Screenshot into Devices.
+It will capture the screenshot every 10 sec and then upload it to the specific server.
 
 To Run a Project
 

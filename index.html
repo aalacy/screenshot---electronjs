@@ -10,15 +10,15 @@
         <link rel="stylesheet" href="./style.css" />
     </head>
     <body>
-        <p>Last screenshot <span id="datetime"></span></p>
+        <p>Last screenshot at <span id="datetime"></span></p>
         <img id="my-preview" />
 
         <div id="openModal" class="modalDialog">
             <div>
-                <form>
+                <form name="simpleForm" action="#">
                     <h2>User Info</h2>
 
-                    <p>Please input your username</p>
+                    <p id="usernameLabel">*Please input your username (max: 10 chars, min: chars)</p>
                     <p>
                         <input
                             class="input"
@@ -27,20 +27,37 @@
                             id="userName"
                             name="userName"
                             value=""
+                            placeholder="Joe"
                             required
                         />
                     </p>
-                    <button class="button" id="okBtn">Ok</button>
+                    <p>*Please input server url</p>
+                    <p>
+                        <input
+                            type="url"
+                            pattern="https://.*"
+                            class="input"
+                            id="serverURL"
+                            name="serverURL"
+                            value=""
+                            placeholder="https://xxxx.ngrok.io"
+                            required
+                        />
+                    </p>
+                    <button type="submit" class="button" id="okBtn">Ok</button>
                 </form>
             </div>
         </div>
 
         <script>
-            document.getElementById("okBtn").onclick = function () {
+            document.getElementById("okBtn").addEventListener("click", (e) => {
                 const userName = document.getElementById("userName").value.replace(/' '/g, "");
-                console.log("userName in browser", userName);
-                window.electronAPI.send("set-username", userName);
-            };
+                const showUserName = document.getElementById("userName").style.display !== "none";
+                const serverURL = document.getElementById("serverURL").value.replace(/' '/g, "");
+                if ((showUserName && !userName) || !serverURL || !serverURL.startsWith("https://")) return false;
+                console.log("[input in modal] ", userName, serverURL);
+                window.electronAPI.send("set-username", { userName, serverURL });
+            });
         </script>
     </body>
 </html>

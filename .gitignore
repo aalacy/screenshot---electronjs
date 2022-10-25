@@ -1,2 +1,6 @@
 node_modules
 tmp
+yarn-error.log
+tracker-linux-x64
+tracker-mas-x64
+tracker-win32-x64

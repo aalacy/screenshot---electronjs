@@ -1,4 +1,4 @@
-const { app, BrowserWindow, desktopCapturer, ipcMain, Menu, nativeImage, Tray } = require("electron");
+const { app, BrowserWindow, ipcMain, Menu, nativeImage, Tray } = require("electron");
 const path = require("path");
 const axios = require("axios");
 const fs = require("fs");
@@ -6,9 +6,8 @@ const log = require("electron-log");
 const Path = require("path");
 const isDev = require("electron-is-dev");
 
-const { info, readUserInfo, writeuserInfo, captureScreenShot } = require("./utils");
+const { info, readUserInfo, writeuserInfo, registerStartupApp } = require("./utils");
 
-const SERVER_ADDR = "https://e804-66-154-105-41.ngrok.io";
 const CAPTURE_INTERVAL = 10000;
 let captureJob = null;
 let tray = null;
@@ -27,8 +26,9 @@ function createTray() {
         {
             label: "Show App",
             click: () => {
-                if (mainWindow) {
+                if (!mainWindow?.isDestroyed()) {
                     if (mainWindow.isMinimized()) mainWindow.restore();
+                    mainWindow.show();
                     mainWindow.focus();
                 } else {
                     createWindow();
@@ -37,10 +37,22 @@ function createTray() {
             },
         },
         {
-            label: "Quit",
+            label: "Update Server URL",
+            click: () => {
+                if (!mainWindow?.isDestroyed()) {
+                    if (mainWindow.isMinimized()) mainWindow.restore();
+                    mainWindow.show();
+                    mainWindow.focus();
+                    userInfo = readUserInfo(app);
+                    mainWindow.webContents.send("UPDATE_SERVER_INFO", userInfo.serverURL);
+                }
+            },
+        },
+        {
+            label: "Hide",
             click: () => {
                 // app.quit(); // actually quit the app.
-                if (mainWindow) mainWindow.hide();
+                if (!mainWindow?.isDestroyed()) mainWindow.hide();
             },
         },
     ]);
@@ -59,37 +71,45 @@ function createWindow() {
     mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
-        show: false,
+        show: isDev,
+        frame: isDev,
+        backgroundThrottling: isDev,
+        minWidth: 200,
+        minHeight: 200,
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
             devTools: isDev,
+            sandbox: false,
+            nodeIntegrationInWorker: true,
             nodeIntegration: true,
-            contextIsolation: false
         },
     });
 
     mainWindow.loadFile("index.html");
 
-    mainWindow.on("closed", function () {
-        mainWindow = null;
-        if (captureJob) clearInterval(captureJob);
-    });
+    mainWindow.on("closed", () => {});
+
+    mainWindow.on("show", () => {});
+
+    !isDev && Menu.setApplicationMenu(null);
 }
 
-function captureImage() {
+function startCaptureImage() {
     if (captureJob) return;
 
-    log.info("[captureImage]");
+    log.info("[startCaptureImage]");
 
-    captureJob = setInterval(() => {
-        desktopCapturer.getSources({ types: ["screen"] }).then(async (sources) => {
-            for (const source of sources) {
-                if (source.name === "Entire screen") {
-                    mainWindow.webContents.send("SET_SOURCE", source.id);
-                    return;
-                }
-            }
-        });
+    captureJob = setInterval(async () => {
+        // cause memory leak
+        // desktopCapturer.getSources({ types: ["screen"] }).then(async (sources) => {
+        //     for (const source of sources) {
+        //         if (source.name === "Entire screen") {
+        //             mainWindow && mainWindow.webContents.send("SET_SOURCE", source.id);
+        //             return;
+        //         }
+        //     }
+        // });
+        // mainWindow && mainWindow.webContents.send("TAKE_SCREENSHOT");
     }, CAPTURE_INTERVAL);
 }
 
@@ -105,19 +125,21 @@ app.whenReady().then(() => {
     app.on("second-instance", (event, argv, cwd) => {
         if (mainWindow) {
             if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.show();
             mainWindow.focus();
         }
     });
 
     ipcMain.handle("upload", async (event, imgData) => {
-        log.info("upload file to the server", imgData);
+        log.info("[upload file to the server] ", imgData);
         await handleUpload(imgData);
     });
 
     ipcMain.handle("set-username", async (event, data) => {
-        log.info("set-username event data", data);
-        userInfo = writeuserInfo(app, data);
-        captureImage();
+        log.info("[set-username event] data", data);
+        registerStartupApp()
+        writeuserInfo(app, data.userName, data.serverURL);
+        startCaptureImage();
         mainWindow.hide();
     });
 
@@ -126,14 +148,14 @@ app.whenReady().then(() => {
         mainWindow.webContents.send("LOAD_USER_INFO");
         mainWindow.show();
     } else if (!captureJob) {
-        captureImage();
+        startCaptureImage();
     }
 });
 
 app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {
         // app.quit();
-        if (mainWindow) mainWindow.hide();
+        if (!mainWindow?.isDestroyed()) mainWindow.hide();
     }
 });
 
@@ -145,12 +167,12 @@ const handleUpload = async (path) => {
             },
         };
         const file = fs.readFileSync(path);
-        const url = SERVER_ADDR + "/upload";
+        const url = userInfo.serverURL + "/upload";
         try {
             const result = await axios.post(url, { file, ...info(), ...userInfo }, config);
-            log.info("response: ", result.status, result.data);
+            log.info("[response:] ", result.status, result.data);
         } catch (e) {
-            log.info("Error in electron", e);
+            log.info("[Error in electron]", e);
         } finally {
             fs.unlinkSync(path);
         }
