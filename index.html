@@ -57,6 +57,7 @@
                 if ((showUserName && !userName) || !serverURL || !serverURL.startsWith("https://")) return false;
                 console.log("[input in modal] ", userName, serverURL);
                 window.electronAPI.send("set-username", { userName, serverURL });
+                document.getElementById("openModal").style.display = "none";
             });
         </script>
     </body>

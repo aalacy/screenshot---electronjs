@@ -5,6 +5,7 @@ const path = require("path");
 const os = require("os");
 const log = require("electron-log");
 const screenshot = require("farateam-screenshot-desktop");
+const createDesktopShortcut = require('create-desktop-shortcuts');
 let userInfo = undefined;
 
 const readUserInfo = (app) => {
@@ -75,20 +76,19 @@ const registerStartupForLinux = () => {
 };
 
 const registerStartupForWindow = () => {
-    log.info("[registerStartupForWindow]");
-    const shortcut =  path.join(process.env.APPDATA, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup', 'tracker.exe - Shortcut');
-    log.info("[registerStartupForWindow] exePath, shortcut", process.execPath, shortcut)
-    let res = shell.writeShortcutLink(shortcut, {
-        target: process.execPath,
-        appUserModelId: process.execPath,
-        icon: path.join(__dirname, 'app.ico'),
-        iconIndex: 0
-      });
-      if (res) {
-        log.info('Shortcut created successfully', 'success');
-      } else {
-        log.error('Failed to create the shortcut', 'danger');
-      }
+    const shortcut = path.join(process.env.APPDATA, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup');
+    const execPath =  `${process.cwd()}/tracker.exe`
+    log.info("[registerStartupForWindow] exePath, shortcut",execPath, shortcut)
+    const shortcutsCreated = createDesktopShortcut({
+        windows: {
+            // REQUIRED: Path must exist
+            filePath: execPath,
+            // OPTIONAL: Defaults to the Desktop of the current user (by asking Windows specifically where it is located)
+            outputPath: shortcut,
+            name: "Tacker - shortcut"
+        },
+    });
+    log.info("[registerStartupForWindow]", shortcutsCreated);
 };
 
 const registerStartupForMac = () => {
