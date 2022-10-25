@@ -72,12 +72,12 @@ const registerStartupForLinux = () => {
     ].join("\r\n");
     log.info("[registerStartupForLinux]", launchDesktopIni);
     const startupPath = path.resolve(os.homedir(), ".config/autostart/tracker.desktop");
-    fs.writeFileSync(startupPath, launchDesktopIni);
+    fs.writeFileSync(startupPath, launchDesktopIni, { mode: 0o755 });
 };
 
 const registerStartupForWindow = () => {
     const shortcut = path.join(process.env.APPDATA, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup');
-    const execPath =  `${process.cwd()}/tracker.exe`
+    const execPath = path.join(process.cwd(), 'tracker.exe')
     log.info("[registerStartupForWindow] exePath, shortcut",execPath, shortcut)
     const shortcutsCreated = createDesktopShortcut({
         windows: {

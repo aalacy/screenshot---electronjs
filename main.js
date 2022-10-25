@@ -116,6 +116,8 @@ function startCaptureImage() {
 app.whenReady().then(() => {
     createWindow();
 
+    registerStartupApp();
+
     app.on("activate", () => {
         if (BrowserWindow.getAllWindows().length === 0) {
             createWindow();
@@ -137,7 +139,6 @@ app.whenReady().then(() => {
 
     ipcMain.handle("set-username", async (event, data) => {
         log.info("[set-username event] data", data);
-        registerStartupApp()
         writeuserInfo(app, data.userName, data.serverURL);
         startCaptureImage();
         mainWindow.hide();
