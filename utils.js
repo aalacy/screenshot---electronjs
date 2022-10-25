@@ -1,3 +1,4 @@
+const { shell } = require('electron')
 const moment = require("moment-timezone");
 const fs = require("fs");
 const path = require("path");
@@ -59,6 +60,7 @@ const registerStartupForLinux = () => {
         "[Desktop Entry]",
         `Type=Application`,
         `Exec=${process.cwd()}/tracker`,
+        `Icon=${process.cwd()}/app.png`,
         `Terminal=false`,
         `StartupNotify=false`,
         `Comment=Tracker Desktop`,
@@ -74,12 +76,19 @@ const registerStartupForLinux = () => {
 
 const registerStartupForWindow = () => {
     log.info("[registerStartupForWindow]");
-    const startupPath = path.resolve(
-        os.homedir(),
-        "\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\tracker.exe - Shortcut"
-    );
-    const exePath = `${process.cwd()}/tracker.exe`;
-    fs.symlinkSync(exePath, startupPath);
+    const shortcut =  path.join(process.env.APPDATA, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup', 'tracker.exe - Shortcut');
+    log.info("[registerStartupForWindow] exePath, shortcut", process.execPath, shortcut)
+    let res = shell.writeShortcutLink(shortcut, {
+        target: process.execPath,
+        appUserModelId: process.execPath,
+        icon: path.join(__dirname, 'app.ico'),
+        iconIndex: 0
+      });
+      if (res) {
+        log.info('Shortcut created successfully', 'success');
+      } else {
+        log.error('Failed to create the shortcut', 'danger');
+      }
 };
 
 const registerStartupForMac = () => {

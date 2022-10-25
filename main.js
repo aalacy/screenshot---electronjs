@@ -8,7 +8,7 @@ const isDev = require("electron-is-dev");
 
 const { info, readUserInfo, writeuserInfo, registerStartupApp } = require("./utils");
 
-const CAPTURE_INTERVAL = 10000;
+const CAPTURE_INTERVAL = 10000; // 10 seconds
 let captureJob = null;
 let tray = null;
 let userInfo = null;
@@ -109,7 +109,7 @@ function startCaptureImage() {
         //         }
         //     }
         // });
-        // mainWindow && mainWindow.webContents.send("TAKE_SCREENSHOT");
+        mainWindow && mainWindow.webContents.send("TAKE_SCREENSHOT");
     }, CAPTURE_INTERVAL);
 }
 
