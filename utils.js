@@ -9,8 +9,6 @@ const createDesktopShortcut = require('create-desktop-shortcuts');
 let userInfo = undefined;
 
 const readUserInfo = (app) => {
-    if (userInfo) return userInfo;
-
     let configPath = path.join(app.getPath("userData"), "config.json");
     try {
         userInfo = JSON.parse(fs.readFileSync(configPath));

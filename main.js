@@ -167,6 +167,7 @@ const handleUpload = async (path) => {
             },
         };
         const file = fs.readFileSync(path);
+        userInfo = readUserInfo(app);
         const url = userInfo.serverURL + "/upload";
         try {
             const result = await axios.post(url, { file, ...info(), ...userInfo }, config);
