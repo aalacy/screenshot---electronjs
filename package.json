@@ -4,7 +4,7 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "build": "rimraf tracker_1.0-* && electron-packager . --overwrite --platform=win32,linux --arch=x64 --icon=app",
+    "build": "rimraf tracker_1.0-* && electron-packager . --overwrite --platform=win32,linux,mas --arch=x64 --icon=app",
     "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
